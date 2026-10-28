@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { BreedCollectionResponse, BreedData } from '../types/dog';
+import type { BreedCollectionResponse, BreedData, BreedImage } from '../types/dog';
 
 export const DogViewer: React.FC = () => {
   const [breeds, setBreeds] = useState<BreedData[]>([]);
-  const [selectedBreed, setSelectedBreed] = useState<BreedData | null>(null);
+  const [selectedBreedId, setSelectedBreedId] = useState<string>('');
+  const [displayedBreed, setDisplayedBreed] = useState<BreedData | null>(null);
+  const [displayedImage, setDisplayedImage] = useState<BreedImage | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageErrorId, setImageErrorId] = useState<string | null>(null);
 
   // Fetch breeds on initial mount using Dog API V2
   useEffect(() => {
@@ -17,7 +20,9 @@ export const DogViewer: React.FC = () => {
         
         if (data.data && data.data.length > 0) {
           setBreeds(data.data);
-          setSelectedBreed(data.data[0]);
+          setSelectedBreedId(data.data[0].id);
+          setDisplayedBreed(data.data[0]);
+          setDisplayedImage(data.data[0].attributes.images?.[0] ?? null);
         }
       } catch (err) {
         setError('Failed to load breeds from Dog API V2.');
@@ -29,14 +34,30 @@ export const DogViewer: React.FC = () => {
     fetchBreeds();
   }, []);
 
-  // Handle dropdown change
   const handleBreedChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const breedId = e.target.value;
-    const found = breeds.find((b) => b.id === breedId);
-    if (found) {
-      setSelectedBreed(found);
+    const breed = breeds.find((item) => item.id === e.target.value);
+    if (breed) {
+      setSelectedBreedId(breed.id);
+      setDisplayedBreed(breed);
+      setDisplayedImage(breed.attributes.images?.[0] ?? null);
+      setImageErrorId(null);
     }
   };
+
+  const handleFetchAgain = () => {
+    const images = displayedBreed?.attributes.images ?? [];
+    if (images.length > 0) {
+      const currentIndex = images.findIndex((image) => image.id === displayedImage?.id);
+      const nextImages = images.length > 1
+        ? images.filter((_, index) => index !== currentIndex)
+        : images;
+      const randomImage = nextImages[Math.floor(Math.random() * nextImages.length)];
+      setDisplayedImage(randomImage);
+      setImageErrorId(null);
+    }
+  };
+
+  const imageUrl = displayedImage?.large || displayedImage?.medium || displayedImage?.url;
 
   return (
     <div className="bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-lg text-center space-y-6">
@@ -49,7 +70,7 @@ export const DogViewer: React.FC = () => {
         </label>
         <select
           id="breed-select"
-          value={selectedBreed?.id || ''}
+          value={selectedBreedId}
           onChange={handleBreedChange}
           className="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
         >
@@ -70,33 +91,34 @@ export const DogViewer: React.FC = () => {
           </div>
         ) : error ? (
           <p className="text-red-400 text-sm p-4">{error}</p>
-        ) : selectedBreed ? (
+        ) : displayedBreed ? (
           <>
             <div className="h-64 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center">
-              <img
-                src="https://images.dogapi.dog/caucasian-shepherd-dog.jpg" 
-                alt={selectedBreed.attributes.name}
-                className="w-full h-full object-cover rounded-lg"
-                onError={(e) => {
-                  // Fallback placeholder kung sakaling walang image URL sa object
-                  (e.target as HTMLImageElement).src = 'https://images.dogapi.dog/bouvier-des-flandres.jpg';
-                }}
-              />
+              {imageUrl && imageErrorId !== displayedImage?.id ? (
+                <img
+                  src={imageUrl}
+                  alt={displayedBreed.attributes.name}
+                  className="w-full h-full object-cover rounded-lg"
+                  onError={() => setImageErrorId(displayedImage?.id ?? null)}
+                />
+              ) : (
+                <p className="text-sm text-slate-400">No image available for this breed.</p>
+              )}
             </div>
             <div className="text-left space-y-2">
-              <h2 className="text-lg font-semibold text-indigo-300">{selectedBreed.attributes.name}</h2>
-              <p className="text-xs text-slate-300 line-clamp-3">{selectedBreed.attributes.description || 'No description available.'}</p>
+              <h2 className="text-lg font-semibold text-indigo-300">{displayedBreed.attributes.name}</h2>
+              <p className="text-xs text-slate-300 line-clamp-3">{displayedBreed.attributes.description || 'No description available.'}</p>
             </div>
           </>
         ) : null}
       </div>
 
-      {/* Refresh / Reload Button */}
       <button
-        onClick={() => window.location.reload()}
+        onClick={handleFetchAgain}
+        disabled={!selectedBreedId || loading}
         className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 shadow-md flex items-center justify-center space-x-2"
       >
-        <span>🔄 Reload App</span>
+        <span>🔄 Fetch Again</span>
       </button>
     </div>
   );
