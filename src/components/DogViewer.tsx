@@ -60,19 +60,22 @@ export const DogViewer: React.FC = () => {
   const imageUrl = displayedImage?.large || displayedImage?.medium || displayedImage?.url;
 
   return (
-    <div className="bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-lg text-center space-y-6">
-      <h1 className="text-2xl font-bold text-indigo-400">🐶 Dog API V2 Viewer</h1>
+    <section className="dog-card" aria-labelledby="dog-viewer-title">
+      <header className="dog-header">
+        <div className="brand-mark" aria-hidden="true">🐾</div>
+        <div>
+          <p className="eyebrow">THE BREED COLLECTION</p>
+          <h1 id="dog-viewer-title">Meet your next favorite</h1>
+          <p className="header-caption">A little more about the dogs we love.</p>
+        </div>
+      </header>
 
-      {/* Breed Combo Box / Select */}
-      <div className="flex flex-col text-left space-y-2">
-        <label htmlFor="breed-select" className="text-sm font-medium text-slate-300">
-          Select Dog Breed:
-        </label>
+      <div className="breed-picker">
+        <label htmlFor="breed-select">Choose a breed</label>
         <select
           id="breed-select"
           value={selectedBreedId}
           onChange={handleBreedChange}
-          className="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
         >
           {breeds.map((breed) => (
             <option key={breed.id} value={breed.id}>
@@ -82,44 +85,52 @@ export const DogViewer: React.FC = () => {
         </select>
       </div>
 
-      {/* Dog Details & Image Display */}
-      <div className="relative w-full bg-slate-900 rounded-xl overflow-hidden border border-slate-700 p-4 space-y-4">
+      <div className="dog-showcase">
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-48 space-y-2 text-indigo-400">
-            <div className="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm">Loading breeds...</span>
+          <div className="status-panel" role="status">
+            <span className="loading-spinner" aria-hidden="true" />
+            <span>Finding lovely dogs...</span>
           </div>
         ) : error ? (
-          <p className="text-red-400 text-sm p-4">{error}</p>
+          <p className="status-panel error-message" role="alert">{error}</p>
         ) : displayedBreed ? (
           <>
-            <div className="h-64 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center">
+            <div className="dog-image-frame">
               {imageUrl && imageErrorId !== displayedImage?.id ? (
                 <img
                   src={imageUrl}
                   alt={displayedBreed.attributes.name}
-                  className="w-full h-full object-cover rounded-lg"
+                  className="dog-image"
                   onError={() => setImageErrorId(displayedImage?.id ?? null)}
                 />
               ) : (
-                <p className="text-sm text-slate-400">No image available for this breed.</p>
+                <p className="image-fallback">No image available for this breed.</p>
               )}
+              <span className="image-tag">BREED SPOTLIGHT</span>
             </div>
-            <div className="text-left space-y-2">
-              <h2 className="text-lg font-semibold text-indigo-300">{displayedBreed.attributes.name}</h2>
-              <p className="text-xs text-slate-300 line-clamp-3">{displayedBreed.attributes.description || 'No description available.'}</p>
+            <div className="breed-details">
+              <div className="breed-title-row">
+                <h2>{displayedBreed.attributes.name}</h2>
+                <span className="breed-dot" aria-hidden="true">✦</span>
+              </div>
+              <p>{displayedBreed.attributes.description || 'No description available.'}</p>
             </div>
           </>
         ) : null}
       </div>
 
       <button
+        type="button"
         onClick={handleFetchAgain}
         disabled={!selectedBreedId || loading}
-        className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 shadow-md flex items-center justify-center space-x-2"
+        className="fetch-button"
       >
-        <span>🔄 Fetch Again</span>
+        <span>Fetch another photo</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+          <path d="M20 7v5h-5M4 17v-5h5m-4.1-2a7 7 0 0 1 11.6-3L20 12M4 12l3.5 5a7 7 0 0 0 11.6-3" />
+        </svg>
       </button>
-    </div>
+      <p className="card-footnote">Showing a new photo from the selected breed</p>
+    </section>
   );
 };
